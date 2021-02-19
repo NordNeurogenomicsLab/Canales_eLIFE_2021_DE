@@ -1,12 +1,13 @@
 ---
 title: "Differential Gene Expression"
 subtitle: |
-  [Canales et al. 2020 (under review): A temporal map of maternal immune activation-induced changes reveals a shift in neurodevelopmentiming and perturbed cortical development in mice](https://www.biorxiv.org/content/10.1101/2020.06.13.150359v1) 
+  [Canales et al. 2020 (under review): A temporal map of maternal immune activation-induced changes \n reveals a shift in neurodevelopmentiming and perturbed cortical development in mice](https://www.biorxiv.org/content/10.1101/2020.06.13.150359v1) 
  
 author: |
   | Data analysis by:
   | Karol Cichewicz, kcichewicz@ucdavis.edu
   | Alexander Nord, asnord@ucdavis.edu, [Lab website](https://nordlab.faculty.ucdavis.edu/)
+  Raw data available at [GSE166376](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE166376)
 
 abstract: |
   **Background** Environmental insults that activate the maternal immune system are potent primers of developmental neuropathology and maternal immune activation (MIA) has emerged as a risk factor for neurodevelopmental and psychiatric disorders. Animal models of MIA provide an opportunity to identify molecular pathways that initiate disease processes and lead to neuropathology and behavioral deficits in offspring. MIA-induced behaviors are accompanied by anatomical and neurochemical alterations in adult offspring that parallel those seen in affected human populations.
@@ -82,6 +83,19 @@ sample.info <- read.csv("./GEO_submission files/metadata.csv")
 
 load("./GEO_submission files/exonic.gene.sizes")
 
+# Exonic gene sizes were calculated as follows:
+# Generate mm9 list of exon sizes 
+# Method description at: https://www.biostars.org/p/83901/
+
+#txdb <- makeTxDbFromGFF("G:/Shared drives/Nord Lab - Personal #Folders/Karol/Genomes/Mus_musculus/UCSC/mm9/Annotation/genes.gtf", #format="gtf")
+#exons.list.per.gene <- exonsBy(txdb,by="gene")
+
+# I paralelized this increasing the speed of the process >2x on a 4-core (logical) machine. 
+# Use mclapply instead of parLapply if you use a Mac.
+#cl <- makeCluster(detectCores())
+#exonic.gene.sizes <- parallel::parLapply(cl, #exons.list.per.gene,function(x){sum(width(reduce(x)))})
+#stopCluster(cl)
+
 ```
 
 
@@ -93,7 +107,7 @@ sample.info_submission <- read.csv("GEO_submission files/Supplementary Table 5, 
 datatable(sample.info_submission, 
           rownames = FALSE, 
           filter = list(position = 'top', clear = FALSE, plain = FALSE), 
-          options = list(paging = FALSE, scrollX=T, scrollY="200px", searching = FALSE))
+          options = list(paging = FALSE, scrollX=T, scrollY="300px", searching = FALSE))
 ```
 
 
@@ -101,9 +115,7 @@ datatable(sample.info_submission,
 
 ## 2.1 Identification of sample sex
 
-A threshold of 1000 counts of Xist gene was used to identify sex
-
-```{r, fig.width = 5, fig.height = 4}
+```{r, fig.width = 5, fig.height = 4, fig.cap= "Sample sex assignment based on *Xist* gene read count. Samples with less than 1000 *Xist* reads per sample are males, and samples with more than 1000 *Xist* reads are females."}
 
 # Qualifies F or M based on the Xist expression
 sex.by.rna <- c(ifelse(exp.data["Xist",]>1000,"F","M")) #
@@ -125,7 +137,8 @@ ggplot(Xist_exp, aes(x=sex.by.rna, y=counts, colours=sex.by.rna))+
 
 ## 2.1 Filtering genes with very low expression
 
-```{r, fig.width = 7, fig.height = 3}
+```{r, fig.width = 7, fig.height = 3, fig.cap="Histograms of RPKM gene expression values before and after excluding genes with very low expression."}
+
 # Calculates RPKM values
 # Gene lengths calculated with lapply
 gene.lengths <- as.numeric(lapply(1:nrow(exp.data), function(x) FUN= as.numeric(exonic.gene.sizes[rownames(exp.data)[x]])))
@@ -229,7 +242,8 @@ rpkm.data_linear <- rpkm(exp.data, gene.length=gene.lengths, log=F)
 
 ## 2.2 PCA plots
 
-```{r, fig.width = 14, fig.height = 5}
+```{r, fig.width = 14, fig.height = 5, fig.cap="**Figure 1bc.** Principal component analysis (PCA) of RNA-seq data indicates that developmental age accounts for the majority of variance across samples. Age (DPC) or sex are represented as colored symbols in (b - left) and (c - right) respectively, and poly(I:C) or saline treatment indicated by circles or triangles, respectively"}
+
 setwd(github_dir)
 
 group <- ifelse(sample.info[,"Condition"]=="Saline",1,2)
@@ -247,7 +261,7 @@ grid.arrange(PCA_plot, PCA_plot_sex, ncol = 2)
 
 # 3. Developmental time prediction model
 
-```{r, fig.width = 7, fig.height = 5}
+```{r, fig.width = 7, fig.height = 5, fig.cap="**Figure 4c.** Temporal modeling of the RNA-seq data suggests acceleration of the neurodevelopmental program in MIA animals at E17.5 (P = 4.5e-06, Student’s t-test) and similar trend at E14.5 (P = 0.07, Student’s t-test). Actual age (X-axis) vs predicted age (Y-axis) calculated by the linear model. Control samples were used for training the model. Lines connect average values, points depict individual samples and are jittered along the X-axis."}
 
 # 19.5 was used as a numerical representation of the P0 time point.
 
@@ -449,7 +463,7 @@ E19.5_GLM <- single_timepoint_glm_function(19.5)
 
 ## 4.1 Numbers of DE genes
 
-```{r, fig.width = 9, fig.height = 6}
+```{r, fig.width = 9, fig.height = 6, fig.cap="**Figure 1f.** Numbers of upregulated and downregulated DE genes at FDR < 0.05 and P < 0.05 thresholds show varying DE gene numbers with a peak of dysregulated genes at E17.5."}
 
 E12.5_up_n <- nrow(filter(E12.5_GLM, PValue < 0.05, logFC > 0))
 E12.5_down_n <- nrow(filter(E12.5_GLM, PValue < 0.05, logFC < 0))
@@ -486,7 +500,7 @@ DE_df_n <- t(data.frame("E12.5" =c(E12.5_up_n, E12.5_down_n, E12.5_up_n_FDR, E12
 colnames(DE_df_n) <- c("Upregulated", "Downregulated", "Upregulated", "Downregulated")
 
 
-DE_df_n_melted <- melt(DE_df_n)
+DE_df_n_melted <- reshape2::melt(DE_df_n)
 
 DE_df_n_melted$stat <- c(rep(", P < 0.05", 8), rep(", FDR < 0.05", 8))
 
@@ -495,7 +509,7 @@ DE_df_n_melted$Var2_stat <- paste(DE_df_n_melted$Var2, DE_df_n_melted$stat)
 
 Fig1f <- ggplot(DE_df_n_melted, aes(fill=Var2_stat, group=Var2, x=Var1, y=value))+
   geom_bar(position = "dodge",  stat="identity", color="black")+
-   theme_bw()+
+  theme_bw()+
   #scale_fill_manual(values=brewer.pal(n = 8, name = "Paired")[c(6,6,2,2 )])+
   scale_fill_manual(values=c("#1F78B4", "#62a0ca", "#E31A1C", "#eb5e60"))+
   theme(legend.title=element_blank())+
@@ -507,8 +521,9 @@ Fig1f <- ggplot(DE_df_n_melted, aes(fill=Var2_stat, group=Var2, x=Var1, y=value)
   theme(panel.border = element_blank(),
         #legend.key = element_blank(),
         axis.ticks = element_blank(),
-        axis.text  = element_blank(),
-        axis.text.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(angle = 90, size = 14, face = "bold", 
+                                   hjust = 0.5, vjust = -4),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())+
   theme(legend.position="bottom")
@@ -518,6 +533,7 @@ Fig1f
 ```
 
 ## 4.2 Interactive volcano plots and DE tables
+To improve the performance of interactive volcano plots, \n only genes with P < 0.05 are displayed. Tables contain full DE data sets.
 
 ```{r}
 volcano_plot_text_2 <- function(x, title) {
@@ -645,7 +661,7 @@ ggplotly(p) %>%
 
 ### 4.2.1 E12.5
 
-```{r, fig.width = 12, fig.height = 6}
+```{r, fig.width = 12, fig.height = 6, fig.cap="**Figure 1e.**"}
 p <- volcano_plot_text_3(E12.5_GLM, "E12.5")
 p
 
@@ -658,7 +674,7 @@ datatable(E12.5_GLM, rownames = FALSE, filter="top", options = list(pageLength =
 
 ### 4.2.2 E14.5
 
-```{r, fig.width = 12, fig.height = 6}
+```{r, fig.width = 12, fig.height = 6, fig.cap="**Figure 1e.**"}
 
 p <- volcano_plot_text_3(E14.5_GLM, "E14.5")
 p
@@ -671,7 +687,7 @@ datatable(E14.5_GLM, rownames = FALSE, filter="top", options = list(pageLength =
 
 ### 4.2.3 E17.5
 
-```{r, fig.width = 12, fig.height = 6}
+```{r, fig.width = 12, fig.height = 6, fig.cap="**Figure 1e.**"}
 
 p <- volcano_plot_text_2(E17.5_GLM, "E17.5")
 p
@@ -682,9 +698,9 @@ p
 datatable(E17.5_GLM, rownames = FALSE, filter="top", options = list(pageLength = 15, scrollX=T))
 ```
 
-### 4.2.4  P0
+### 4.2.4 P0
 
-```{r, fig.width = 12, fig.height = 6}
+```{r, fig.width = 12, fig.height = 6, fig.cap="**Figure 1e.**"}
 
 p <- volcano_plot_text_3(E19.5_GLM, "P0")
 p
@@ -699,9 +715,7 @@ datatable(E19.5_GLM, rownames = FALSE, filter="top", options = list(pageLength =
 
 ## 4.3 Heatmap of DE genes
 
-Figure 1d
-
-```{r}
+```{r, fig.cap="**Figure 1d.** Heatmap representing relative gene expression changes between control and MIA samples across time-points. Hierarchical clustering by relative fold changes shows stage-specific differential expression signatures (DE genes shown have FDR < 0.05 and log2 fold change (log2FC) > 1 or < -1)."}
 #Build dataframe of logFC values
 padding <- 0
 a <- data.frame("gene_name"=E12.5_GLM$gene_name, "E12.5_logFC"=E12.5_GLM$logFC+padding)
@@ -775,7 +789,8 @@ Fig_1d
 
 # 5. SFARI gene enrichment among DE genes
 
-```{r, fig.width = 8, fig.height = 8}
+```{r, fig.width = 7, fig.height = 7, fig.cap="**Figure 1g.** Intersection of stage-specific DE genes with the 82 SFARI autism-associated mouse gene orthologs that were expressed at measurable levels in the RNA-seq data. E17.5 DE genes (FDR < 0.05) were enriched for SFARI genes (P = 3.9e-04, hypergeometric test). Concentric circles represent developmental time-points. Light red, upregulated DE genes (P < 0.05); dark red, upregulated DE genes (FDR < 0.05); light blue, downregulated DE genes (P < 0.05); dark blue, downregulated DE genes (FDR < 0.05)."}
+
 SFARI_genes <- read.csv("./GEO_submission files/SFARI-Gene_genes_01-15-2019release_02-26-2019export.csv")
 
 #head(SFARI_genes)
@@ -1054,7 +1069,8 @@ Fig1g
 ## 5.1 SFARI genes enrichment statistical tests
 
 ### 5.1.1 Permutation test
-```{r, fig.width = 8, fig.height = 8}
+```{r, fig.width = 12, fig.height = 8, fig.cap="Enrichment of autism-associated genes in our DE gene set, based on randomly sampled gene sets (bars) vs. observed number (red line)."}
+
 
 ##### Permutation test per GOmpers et al. #####
 # Code adopted from Alex's analysis
@@ -1117,7 +1133,7 @@ permutation_test(E19.5_GLM_SFARI_cat, "P0")
 
 ```
 
-### 5.1.2 Hypergeometric test
+### 5.1.2 P value table
 ```{r, fig.width = 4, fig.height = 6}
 
 #Hypergeometric test
@@ -1161,10 +1177,9 @@ knitr::kable(df_p_values,
 ```
 
 
-
 # 6. Individual gene expression trajectories
 
-```{r, error=FALSE, warning=FALSE, message=FALSE, echo=TRUE, dev='png', dpi=72}
+```{r}
 
 ###
 # x is a gene name
@@ -1201,7 +1216,7 @@ ggplot(rpkm_test_w_info, aes(x = DPC, y= RPKM, colour=Condition))+
 ```
 
 ## 6.1 Fig. 3d
-```{r, fig.width = 7, fig.height = 6}
+```{r, fig.width = 7, fig.height = 6, fig.cap="**Figure 3d.** RPKM expression plots of genes that are associated with the network of acute DE at E12.5."}
 
 genes <- c("Vegfa", "Flt1", "Pdk1", "Ldha", "Bnip3", "Il20rb") 
 
@@ -1214,7 +1229,7 @@ marrangeGrob(pl, nrow=2, ncol=3, top = "",
 ```
 
 ## 6.2 Fig. 4a
-```{r, fig.width = 7, fig.height = 12}
+```{r, fig.width = 7, fig.height = 12, fig.cap="**Figure 4a.** RPKM trajectories of proliferative and cortical lamination markers that were DE and validated at protein level."}
 
 genes <- c("Mki67", "Eomes", "Pax6", "Sox9", "Tbr1", "Bcl11b", "Satb2", "Cux1")
 gene_names <- c("Mki67 (Ki67)", "Eomes (Tbr2)", "Pax6", "Sox9", "Tbr1", "Bcl11b (Ctip2)", "Satb2", "Cux1")
@@ -1230,7 +1245,7 @@ marrangeGrob(pl, nrow=4, ncol=2, top = "",
 ```
 
 ## 6.3 Fig. 6q
-```{r, fig.width = 7, fig.height = 6}
+```{r, fig.width = 7, fig.height = 6, fig.cap="**Figure 6q.** RPKM trajectories of the cell identity markers tested in Figure 6a-k across the developmental time-points of the study show parallel differences in mRNA expression of cell-type markers following MIA induction. *Gfap* and *Olig2* mRNA was significantly upregulated in MIA samples at E17.5. *Dlx2* was significantly downregulated at E17.5, with no significant changes observed for Gad1 (encodes GAD67) or for *Pdgfra* (not shown)."}
 
 genes <- c("Gfap", "Olig2", "Dlx2", "Gad1") 
 
@@ -1241,9 +1256,9 @@ marrangeGrob(pl, nrow=2, ncol=3, top = "",
 
 ```
 
-## 6.4 Fig. 7d
+## 6.4 Fig. S7d-g
 
-```{r, fig.width = 7, fig.height = 6}
+```{r, fig.width = 7, fig.height = 6, fig.cap="**Supplementary Figure 7d-g.** RNA-seq RPKM expression trajectories throughout development of Ki67, Tbr2, Pax6, and Sox9."}
 
 genes <- c("Mki67", "Eomes", "Pax6", "Sox9")
 gene_names <- c("Mki67 (Ki67)", "Eomes (Tbr2)", "Pax6", "Sox9")
@@ -1257,6 +1272,580 @@ marrangeGrob(pl, nrow=2, ncol=2, top = "",
              layout_matrix = rbind(c(1,2), c(3,4)))
 
 
+
+```
+
+# 7. Sex specific DE
+
+```{r, fig.width = 14, fig.height = 5, fig.cap= "**Supplementary Figure 2cd.** Males and females show largely concordant DE signatures following MIA. Numbers of upregulated and downregulated DE genes with P < 0.05 and FDR < 0.05, for the DE analysis performed on males and females demonstrate robust DE at E17.5 in both sexes."}
+
+### Male vs Female DE analysis without lane covariate
+
+single_timepoint_glm_sex <- function(x, y){
+#x = "12.5"
+#y = "M"
+
+control.datapoints <- which(sample.info$Condition == "Saline")
+polyic.datapoints <- which(sample.info$Condition == "PolyIC")
+  
+control.datapoints <- intersect(control.datapoints, which(dpc == x & sex.by.rna == y))
+polyic.datapoints <- intersect(polyic.datapoints, which(dpc == x & sex.by.rna == y))
+
+use.cols <- c(control.datapoints, polyic.datapoints)
+
+test.sex.by.rna <- sex.by.rna[use.cols]
+test.lane <- as.numeric(lane)[use.cols]
+test.data <- exp.data[,use.cols]
+test.group <- group[use.cols]
+
+#test.group
+
+min.cpm <- 0.1
+
+design <- model.matrix(~as.numeric(test.group))
+y <- DGEList(counts=test.data, group = as.numeric(test.group))
+keep <- rowSums(cpm(y)>min.cpm) >=2 #keeps only genes expressed in above min.cpm in at least 2 libraries in each group 
+y <- y[keep, , keep.lib.sizes=FALSE]
+y <- estimateGLMCommonDisp(y,design)
+y <- estimateGLMTrendedDisp(y,design)
+y <- estimateGLMTagwiseDisp(y,design)
+fit <- glmFit(y,design) 
+lrt <- glmLRT(fit) # Genewise Negative Binomial Generalized Linear Models.
+
+glm.output <- topTags(lrt, n=Inf)
+glm.output.full <- glm.output$table
+
+glm.output.full$gene_name <- rownames(glm.output.full)
+rownames(glm.output.full) <- NULL
+glm.output.full <- glm.output.full[,c(6,1:5)]
+
+glm.output.full
+
+}
+
+E12.5_GLM_male <- single_timepoint_glm_sex(12.5, "M")
+E14.5_GLM_male <- single_timepoint_glm_sex(14.5, "M")
+E17.5_GLM_male <- single_timepoint_glm_sex(17.5, "M")
+E19.5_GLM_male <- single_timepoint_glm_sex(19.5, "M")
+
+E12.5_GLM_female <- single_timepoint_glm_sex(12.5, "F")
+E14.5_GLM_female <- single_timepoint_glm_sex(14.5, "F")
+E17.5_GLM_female <- single_timepoint_glm_sex(17.5, "F")
+E19.5_GLM_female <- single_timepoint_glm_sex(19.5, "F")
+
+
+
+####################################################################################################
+
+DE_genes_barplot_2 <- function(a,b,c,d, title){
+
+E12.5_up_n <- nrow(filter(a, PValue < 0.05, logFC > 0))
+E12.5_down_n <- nrow(filter(a, PValue < 0.05, logFC < 0))
+
+E14.5_up_n <- nrow(filter(b, PValue < 0.05, logFC > 0))
+E14.5_down_n <- nrow(filter(b, PValue < 0.05, logFC < 0))
+
+E17.5_up_n <- nrow(filter(c, PValue < 0.05, logFC > 0))
+E17.5_down_n <- nrow(filter(c, PValue < 0.05, logFC < 0))
+
+E19.5_up_n <- nrow(filter(d, PValue < 0.05, logFC > 0))
+E19.5_down_n <- nrow(filter(d, PValue < 0.05, logFC < 0))
+
+###
+
+E12.5_up_n_FDR <- nrow(filter(a, FDR < 0.05, logFC > 0))
+E12.5_down_n_FDR <- nrow(filter(a, FDR < 0.05, logFC < 0))
+
+E14.5_up_n_FDR <- nrow(filter(b, FDR < 0.05, logFC > 0))
+E14.5_down_n_FDR <- nrow(filter(b, FDR < 0.05, logFC < 0))
+
+E17.5_up_n_FDR <- nrow(filter(c, FDR < 0.05, logFC > 0))
+E17.5_down_n_FDR <- nrow(filter(c, FDR < 0.05, logFC < 0))
+
+E19.5_up_n_FDR <- nrow(filter(d, FDR < 0.05, logFC > 0))
+E19.5_down_n_FDR <- nrow(filter(d, FDR < 0.05, logFC < 0))
+
+DE_df_n <- t(data.frame("E12.5" =c(E12.5_up_n, E12.5_down_n, E12.5_up_n_FDR, E12.5_down_n_FDR),
+           "E14.5" =c(E14.5_up_n, E14.5_down_n, E14.5_up_n_FDR, E14.5_down_n_FDR),
+           "E17.5" =c(E17.5_up_n, E17.5_down_n, E17.5_up_n_FDR, E17.5_down_n_FDR),
+           "P0" =c(E19.5_up_n, E19.5_down_n, E19.5_up_n_FDR, E19.5_down_n_FDR)))
+
+colnames(DE_df_n) <- c("Upregulated", "Downregulated", "Upregulated", "Downregulated")
+
+
+DE_df_n_melted <- reshape2::melt(DE_df_n)
+
+DE_df_n_melted$stat <- c(rep(", P < 0.05", 8), rep(", FDR < 0.05", 8))
+
+DE_df_n_melted$Var2_stat <- paste(DE_df_n_melted$Var2, DE_df_n_melted$stat)
+
+ggplot(DE_df_n_melted, aes(fill=Var2_stat, group=Var2, x=Var1, y=value))+
+  geom_bar(position = "dodge",  stat="identity", color="black")+
+   theme_bw()+
+  #scale_fill_manual(values=brewer.pal(n = 8, name = "Paired")[c(6,6,2,2 )])+
+  scale_fill_manual(values=c("#1F78B4", "#62a0ca", "#E31A1C", "#eb5e60"))+
+  theme(legend.title=element_blank())+
+  
+  theme(plot.title = element_text(size = rel(1.4), hjust=0.5))+
+  geom_text(aes(label=value), position=position_dodge(width=0.9), hjust=-0.2)+
+  coord_flip()+
+  scale_x_discrete(limits = rev(levels(DE_df_n_melted$Var1)))+
+  labs(title= title, x="", y="")+
+  theme(panel.border = element_blank(),
+        legend.position = "bottom",
+        axis.ticks = element_blank(),
+        axis.text.y = element_text(angle = 90, size = 14, face = "bold", 
+                                   hjust = 0.5, vjust = -4),
+        axis.text.x = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+  
+
+
+}
+
+DE_males <- DE_genes_barplot_2(E12.5_GLM_male, 
+                 E14.5_GLM_male, 
+                 E17.5_GLM_male, 
+                 E19.5_GLM_male, "Male DE")
+
+DE_females <- DE_genes_barplot_2(E12.5_GLM_female, 
+                 E14.5_GLM_female, 
+                 E17.5_GLM_female,
+                 E19.5_GLM_female, "Female DE")
+
+
+grid.arrange(DE_males, DE_females, ncol = 2)
+
+```
+
+# 8. The effect of sex covariate on the model
+
+```{r, fig.width = 14, fig.height = 5, cache=FALSE, fig.cap=" **Supplementary Figure 2ab.** Males and females show largely concordant DE signatures following MIA. (left) Numbers of upregulated and downregulated DE genes with P < 0.05 and FDR < 0.05, in the DE analysis lacking the sex covariate, are similar to the DE model including the sex covariate (Figure 2c). (right) Numbers of upregulated and downregulated DE genes with P < 0.05 and FDR < 0.05, in a DE analysis testing for differential expression between sexes identifies few DE genes, suggesting limited sex dimorphism between samples."}
+
+single_timepoint_glm_function_no_sex <- function(x){
+
+control.datapoints <- which(sample.info$Condition == "Saline")
+polyic.datapoints <- which(sample.info$Condition == "PolyIC")  
+  
+control.datapoints <- intersect(control.datapoints, which(dpc == x))
+polyic.datapoints <- intersect(polyic.datapoints, which(dpc == x))
+
+use.cols <- c(control.datapoints, polyic.datapoints)
+
+test.dpc <- dpc[use.cols]
+test.sex.by.rna <- sex.by.rna[use.cols]
+test.response <- response[use.cols]
+test.rRNA <- as.numeric(rRNA)[use.cols]
+test.group <- group[use.cols]
+test.lane <- as.numeric(lane)[use.cols]
+test.data <- exp.data[,use.cols]
+
+min.cpm.criteria <- 0.1
+min.cpm <- min.cpm.criteria
+
+design <- model.matrix(~as.factor(test.lane) + as.numeric(test.group))
+y <- DGEList(counts=test.data, group=group[use.cols])
+keep <- rowSums(cpm(y)>min.cpm) >=2 #keeps only genes expressed in above min.cpm in at least 2 libraries in each group 
+y <- y[keep, , keep.lib.sizes=FALSE]
+y <- estimateGLMCommonDisp(y,design)
+y <- estimateGLMTrendedDisp(y,design)
+y <- estimateGLMTagwiseDisp(y,design)
+fit <- glmFit(y,design) 
+lrt <- glmLRT(fit) # Genewise Negative Binomial Generalized Linear Models.
+
+glm.output <- topTags(lrt, n=Inf)
+glm.output.full <- glm.output$table
+
+glm.output.full$gene_name <- rownames(glm.output.full)
+rownames(glm.output.full) <- NULL
+glm.output.full <- glm.output.full[,c(6,1:5)]
+
+glm.output.full
+
+}
+
+E12.5_GLM_no_sex <- single_timepoint_glm_function_no_sex(12.5)
+E14.5_GLM_no_sex <- single_timepoint_glm_function_no_sex(14.5)
+E17.5_GLM_no_sex <- single_timepoint_glm_function_no_sex(17.5)
+E19.5_GLM_no_sex <- single_timepoint_glm_function_no_sex(19.5)
+
+
+DE_model_wo_sex_covariate <- DE_genes_barplot_2(E12.5_GLM_no_sex, 
+                 E14.5_GLM_no_sex, 
+                 E17.5_GLM_no_sex, 
+                 E19.5_GLM_no_sex, "DE model without sex covariate")
+
+
+###################
+
+
+single_timepoint_glm_sex_variable <- function(x){
+
+control.datapoints <- which(sample.info$Condition == "Saline")
+polyic.datapoints <- which(sample.info$Condition == "PolyIC")  
+  
+control.datapoints <- intersect(control.datapoints, which(dpc == x))
+polyic.datapoints <- intersect(polyic.datapoints, which(dpc == x))
+
+use.cols <- c(control.datapoints, polyic.datapoints)
+
+test.dpc <- dpc[use.cols]
+test.sex.by.rna <- sex.by.rna[use.cols]
+test.response <- response[use.cols]
+test.rRNA <- as.numeric(rRNA)[use.cols]
+test.group <- group[use.cols]
+test.lane <- as.numeric(lane)[use.cols]
+test.data <- exp.data[,use.cols]
+
+min.cpm.criteria <- 0.1
+min.cpm <- min.cpm.criteria
+
+design <- model.matrix(~as.factor(test.lane) + as.numeric(test.group) + as.factor(ifelse(test.sex.by.rna == "M", 1, 2)))
+y <- DGEList(counts=test.data, group = as.factor(test.sex.by.rna))
+keep <- rowSums(cpm(y)>min.cpm) >=2 #keeps only genes expressed in above min.cpm in at least 2 libraries in each group 
+y <- y[keep, , keep.lib.sizes=FALSE]
+y <- estimateGLMCommonDisp(y,design)
+y <- estimateGLMTrendedDisp(y,design)
+y <- estimateGLMTagwiseDisp(y,design)
+fit <- glmFit(y,design) 
+lrt <- glmLRT(fit) # Genewise Negative Binomial Generalized Linear Models.
+
+glm.output <- topTags(lrt, n=Inf)
+glm.output.full <- glm.output$table
+
+glm.output.full$gene_name <- rownames(glm.output.full)
+rownames(glm.output.full) <- NULL
+glm.output.full <- glm.output.full[,c(6,1:5)]
+
+glm.output.full
+
+}
+
+E12.5_GLM_sex_as_test_variable <- single_timepoint_glm_sex_variable(12.5)
+E14.5_GLM_sex_as_test_variable <- single_timepoint_glm_sex_variable(14.5)
+E17.5_GLM_sex_as_test_variable <- single_timepoint_glm_sex_variable(17.5)
+E19.5_GLM_sex_as_test_variable <- single_timepoint_glm_sex_variable(19.5)
+
+
+DE_model_sex_as_test_variable <- DE_genes_barplot_2(E12.5_GLM_sex_as_test_variable, 
+                 E14.5_GLM_sex_as_test_variable, 
+                 E17.5_GLM_sex_as_test_variable, 
+                 E19.5_GLM_sex_as_test_variable, "DE model with sex \n as the experimental variable. \n Male vs Female")
+
+
+grid.arrange(DE_model_wo_sex_covariate, DE_model_sex_as_test_variable, ncol = 2)
+
+```
+
+# 9. Male vs Female DE
+
+## 9.1 Effect size correlations
+
+```{r, fig.width = 14, fig.height = 5, fig.cap="**Supplementary Figure 3.** Sex-stratified comparison of DE genes and effect sizes suggest increased DE effect sizes in females. Correlation of the relative effect sizes (log2FC) for genes passing FDR < 0.05 identifies high degree of concordance between MIA responses between sexes. Genes passing FDR threshold in either or both sexes are color coded."}
+
+male_vs_female_DE <- function(x, y, z, title){
+
+#x <- E17.5_GLM_male
+#y <- E17.5_GLM_female
+#z <- E17.5_GLM
+
+a <- dplyr::select(x, gene_name, logFC, PValue, FDR)
+b <- dplyr::select(y, gene_name, logFC, PValue, FDR)
+
+colnames(a) <- c("gene_name", paste0(colnames(a)[2:4], "_", "male"))
+colnames(b) <- c("gene_name", paste0(colnames(b)[2:4], "_", "female"))
+
+df <- merge(a, b, by ="gene_name", all=T)
+
+FDR_geneset <- dplyr::filter(z, FDR < 0.05)$gene_name
+
+df <- dplyr::filter(df, gene_name %in% FDR_geneset)
+
+df$Sig <- ifelse(df$FDR_male < 0.05, "Males", "Only in DE model including both sexes")
+df$Sig <- ifelse(df$FDR_female < 0.05, "Females", df$Sig)
+df$Sig <- ifelse(df$FDR_female < 0.05 & df$FDR_male < 0.05, "Independently in both sexes", df$Sig)
+
+
+#Capping at -4 and +4
+df$logFC_male <- ifelse(df$logFC_male > 4, 4, df$logFC_male)
+df$logFC_male <- ifelse(df$logFC_male < -4, -4, df$logFC_male)
+df$logFC_female <- ifelse(df$logFC_female > 4, 4, df$logFC_female)
+df$logFC_female <- ifelse(df$logFC_female < -4, -4, df$logFC_female)
+
+ggplot()+
+  geom_abline(intercept = 0, slope =1)+
+  geom_point(data = filter(df, Sig == "Only in DE model including both sexes"), 
+             aes(x = logFC_male, y = logFC_female, color = Sig, label = gene_name), alpha = 0.4,  size = 2)+
+  geom_point(data = filter(df, Sig == "Females"), 
+             aes(x = logFC_male, y = logFC_female, color = Sig, label = gene_name), alpha = 0.4,  size = 2)+
+  geom_point(data = filter(df, Sig == "Males"), 
+             aes(x = logFC_male, y = logFC_female, color = Sig, label = gene_name), alpha = 0.4,  size = 2)+
+  geom_point(data = filter(df, Sig == "Independently in both sexes"), 
+             aes(x = logFC_male, y = logFC_female, color = Sig, label = gene_name), alpha = 0.4,  size = 2)+
+  theme_bw()+
+ 
+  coord_cartesian(xlim = c(-4, 4), ylim = c(-4, 4))+
+  labs(x="log2FC male", y="log2FC female", title = title, color = "Genes passing FDR < 0.05 \n in the DE model including both sexes \n also DE with FDR < 0.05 in:")+
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()
+        )+
+  scale_color_manual(values = c("Females" = "#619CFF", 
+                                "Males" = "#F8766D", 
+                                "Independently in both sexes" = "#0e8231", 
+                                "Only in DE model including both sexes" = "grey"),
+                     breaks = c("Females", 
+                                "Males", 
+                                "Independently in both sexes",
+                                "Only in DE model including both sexes"))+
+  geom_hline(yintercept=0, linetype=2)+
+  geom_vline(xintercept=0, linetype=2)
+
+}
+
+E12.5_mf <- male_vs_female_DE(E12.5_GLM_male, E12.5_GLM_female, E12.5_GLM, "E12.5")
+E14.5_mf <- male_vs_female_DE(E14.5_GLM_male, E14.5_GLM_female, E14.5_GLM, "E14.5")
+E17.5_mf <- male_vs_female_DE(E17.5_GLM_male, E17.5_GLM_female, E17.5_GLM, "E17.5")
+
+
+grid.arrange(E12.5_mf+theme(legend.position = "none"), 
+             E14.5_mf+theme(legend.position = "none"),
+             E17.5_mf, 
+             ncol = 3, widths = c(1,1,1.8))
+
+# save.image("G:/Shared drives/Nord Lab - Computational Projects/MIA/eLIFE_Clean_code_for_GitHub/temp.RData")
+
+# load("G:/Shared drives/Nord Lab - Computational Projects/MIA/eLIFE_Clean_code_for_GitHub/temp.RData")
+
+```
+
+## 9.2 Venn diagram intersections
+
+### 9.2.1 E14.5
+```{r,  fig.width = 7, fig.height = 5}
+
+# BiocManager::install("RBGL") - required by Vennerable
+# install.packages("Vennerable", repos="http://R-Forge.R-project.org")
+
+# These plots can be further customized with VennThemes, or in the Illustrator...  
+library(Vennerable)
+
+# E14.5
+DE_model_including_both_sexes <- filter(E14.5_GLM, FDR < 0.05)$gene_name
+Female_DE <- filter(E14.5_GLM_female, FDR < 0.05)$gene_name
+
+ll <- list(DE_model_including_both_sexes, Female_DE)
+llv <- Venn(ll, SetNames = c("DE_model_including_both_sexes", "Female_DE"))
+
+plot(llv, doWeights = TRUE, type = "circles")
+
+
+```
+
+### 9.2.2 E17.5
+```{r, fig.height=7, fig.width=18, fig.cap= "**Supplementary Figure 3b**. Venn diagrams illustrating overlap between DE gene sets passing FDR < 0.05 at E14.5 and E17.5, in DE models containing samples from both sexes, males, or females. The DE model comprising individuals of both sexes includes most of the DE signature of each sex. Female DE analysis identifies limited and unique DE signature."}
+
+library(Vennerable)
+
+DE_model_including_both_sexes <- filter(E17.5_GLM, FDR < 0.05)$gene_name
+Male_DE <- filter(E17.5_GLM_male, FDR < 0.05)$gene_name
+Female_DE <- filter(E17.5_GLM_female, FDR < 0.05)$gene_name
+
+ll <- list(DE_model_including_both_sexes, Male_DE, Female_DE)
+llv <- Venn(ll, SetNames = c("DE_model_including_both_sexes", "Male_DE", "Female_DE"))
+
+#plot(llv, doWeights = FALSE)
+#plot(llv, doWeights = TRUE)
+
+# Note. Editing Vennerable plos is very difficult, especially in Rmd framework. Consider switching to ggVennDiagram. 
+
+myplot1 <- function(){plot(llv, doWeights = TRUE)}
+myplot2 <- function(){plot(llv, doWeights = FALSE)}
+
+p1 <- grid.grabExpr(myplot1())
+p2 <- grid.grabExpr(myplot2())
+
+grid.arrange(p1, p2, ncol=2) 
+
+```
+
+## 9.3 Female but not Male DE genes
+
+### 9.3.1 E14.5
+```{r, fig.width = 14, fig.height = 5}
+
+# The order of bars is not exactly the same as in the paper. I decided to omit this due to its complication. 
+
+rpkm_box_plot_sex_single_dpc <- function(x, y){
+  # x <- "Vegfa"
+  # y <- "14.5"
+rpkm_test <- as.data.frame(reshape2::melt(rpkm.data_linear[x,]))
+rpkm_test_w_info <- cbind(rpkm_test, sample.info[,"ExperimentalDesign"])
+rpkm_test_w_info <- cbind(rpkm_test_w_info, as.character(sample.info[,"DPC"]))
+rpkm_test_w_info <- cbind(rpkm_test_w_info, as.character(sample.info[,"Condition"]))
+rpkm_test_w_info <- cbind(rpkm_test_w_info, as.character(sample.info[,"sex.by.rna"]))
+
+
+colnames(rpkm_test_w_info) <- c("RPKM", "treatment", "DPC", "Condition", "Sex")
+
+rpkm_test_w_info$Sex_Condition <- as.character(paste0(rpkm_test_w_info$Sex, "_", rpkm_test_w_info$Condition)) 
+
+rpkm_test_w_info$Sex_Condition_DPC <- as.character(paste0(rpkm_test_w_info$Sex_Condition, "_", rpkm_test_w_info$DPC)) 
+rpkm_test_w_info$Sex <- ifelse(rpkm_test_w_info$Sex == "F", "Female", "Male")
+
+j_brew_colors <- brewer.pal(n = 8, name = "Paired")[c(6,2)]
+
+rpkm_test_w_info <- filter(rpkm_test_w_info, DPC == y)
+
+ggplot(rpkm_test_w_info, aes(x = x, y= RPKM, colour=Condition, shape = Sex, group = Sex_Condition_DPC))+
+  
+  geom_jitter(size=2, alpha = 0.5, position = position_jitterdodge(jitter.width = 0.05))+
+  
+  geom_boxplot(alpha=0, position = position_dodge(width=0.75))+
+  
+  theme_bw()+
+  theme(axis.text.x=element_text(size=12, face="bold"))+
+  labs(title= x, x="")+
+  theme(plot.title = element_text(size = rel(2), hjust=0.5),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        legend.position = "none")+
+  scale_color_manual(values = j_brew_colors)
+  
+  
+}
+
+
+
+# Gene selection criteria
+# FDR < 0.5 and logFC > 0.5 or < -0.5 in females
+# and not logFC > 0.5 or < -0.5 in males. 
+
+f <- filter(E14.5_GLM_female, FDR < 0.05, logFC > 0.5 | logFC < -0.5)$gene_name   #238 genes
+
+m <- filter(E14.5_GLM_male, logFC > 0.5 | logFC < -0.5)$gene_name #2593 genes, FDR criteria removed because of 0 genes passing threshold.
+
+f_but_not_m <- setdiff(f, m)
+
+genes <- filter(E14.5_GLM_female, gene_name %in% f_but_not_m)$gene_name
+
+pl <- lapply(genes[1:12], function(x) rpkm_box_plot_sex_single_dpc(x, "14.5"))
+
+
+marrangeGrob(list(pl[[1]],pl[[2]], pl[[3]], pl[[4]], pl[[5]],pl[[6]],
+                  pl[[7]], pl[[8]], pl[[9]], pl[[10]], pl[[11]],
+                     pl[[12]]+theme(legend.position = "right")), 
+                   nrow=2, ncol=6, top = "", layout_matrix = rbind(c(1:6), c(7:12)))
+
+
+```
+
+### 9.3.2 E17.5
+
+```{r,  fig.width = 14, fig.height = 6, fig.cap= "**Supplementary Figure 3c.** Examples of E14.5 and E17.5 genes significant in females but not males. At E14.5 genes were selected to pass FDR < 0.05 and logFC > 0.5 or logFC < -0.5 in females, but not logFC > 0.5 or logFC < -0.5 in males. The gene-set selection process was analogous for E17.5 with the addition of FDR < 0.05 condition in males. After gene set filtering, twelve genes with the lowest FDR in females were plotted."}
+
+f <- filter(E17.5_GLM_female, FDR < 0.05, logFC > 0.5 | logFC < -0.5)$gene_name   #3037 genes
+m <- filter(E17.5_GLM_male, FDR < 0.05, logFC > 0.5 | logFC < -0.5)$gene_name #1048 genes, 
+
+f_but_not_m <- setdiff(f, m)
+
+genes <- filter(E17.5_GLM_female, gene_name %in% f_but_not_m)$gene_name
+
+pl <- lapply(genes[1:12], function(x) rpkm_box_plot_sex_single_dpc(x, "17.5"))
+
+
+marrangeGrob(list(pl[[1]],pl[[2]], pl[[3]], pl[[4]], pl[[5]],pl[[6]],
+                  pl[[7]], pl[[8]], pl[[9]], pl[[10]], pl[[11]],
+                     pl[[12]]+theme(legend.position = "right")), 
+                   nrow=2, ncol=6, top = "", layout_matrix = rbind(c(1:6), c(7:12)))
+
+```
+
+
+## 9.4 Sex stratifies DE genes 
+
+```{r}
+
+rpkm_box_plot_sex <- function(x){
+  #x <- "Vegfa"
+rpkm_test <- as.data.frame(reshape2::melt(rpkm.data_linear[x,]))
+rpkm_test_w_info <- cbind(rpkm_test, sample.info[,"ExperimentalDesign"])
+rpkm_test_w_info <- cbind(rpkm_test_w_info, as.character(sample.info[,"DPC"]))
+rpkm_test_w_info <- cbind(rpkm_test_w_info, as.character(sample.info[,"Condition"]))
+rpkm_test_w_info <- cbind(rpkm_test_w_info, as.character(sample.info[,"sex.by.rna"]))
+
+
+colnames(rpkm_test_w_info) <- c("RPKM", "treatment", "DPC", "Condition", "Sex")
+
+rpkm_test_w_info$Sex_Condition <- as.character(paste0(rpkm_test_w_info$Sex_by_RNA, "_", rpkm_test_w_info$Condition)) 
+
+rpkm_test_w_info$Sex_Condition_DPC <- as.character(paste0(rpkm_test_w_info$Sex_Condition, "_", rpkm_test_w_info$DPC)) 
+
+head(rpkm_test_w_info)
+
+
+j_brew_colors <- brewer.pal(n = 8, name = "Paired")[c(6,2)]
+
+ggplot(rpkm_test_w_info, aes(x = DPC, y= RPKM, colour=Condition, shape = Sex, group = Sex_Condition))+
+  geom_jitter(size=2, alpha = 0.5, position = position_jitterdodge(jitter.width = 0.2))+
+  geom_boxplot(alpha=0, position = position_dodge(width=0.75), aes(group = Sex_Condition_DPC))+
+  theme_bw()+
+  theme(axis.text.x=element_text(size=12, face="bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  labs(title= x, x="")+
+  theme(plot.title = element_text(size = rel(2), hjust=0.5))+
+  scale_color_manual(values = j_brew_colors)+
+  scale_fill_manual(values = j_brew_colors)+
+  scale_x_discrete(breaks =c("12.5", "14.5", "17.5", "19.5"), labels = c("E12.5", "E14.5", "E17.5", "P0"))
+  
+}
+```
+
+### 9.4.1 
+```{r, fig.width = 14, fig.height = 9}
+# S6a
+x <- c("Vegfa", "Pdk1", "Bnip3", "Flt1", "Ldha",  "Il20rb")
+pl <- lapply(x, function(x) FUN={
+  rpkm_box_plot_sex(x)+theme(legend.position = "none")
+})
+
+marrangeGrob(pl, nrow = 3, ncol=2, top = "")
+```
+
+### 9.4.2
+```{r, fig.width = 14, fig.height = 12}
+# S6b
+### ###
+x <- c("Mki67", "Pax6",  "Tbr1", "Satb2", "Eomes", "Sox9",  "Bcl11b",  "Cux1")
+pl <- lapply(x, function(x) FUN={
+  rpkm_box_plot_sex(x)+theme(legend.position = "none")
+})
+
+marrangeGrob(pl, nrow = 4, ncol=2, top = "")
+```
+
+### 9.4.3
+```{r, fig.width = 14, fig.height = 6, fig.cap="**Supplementary Figure 6.** Sex-stratified RPKM gene trajectories of genes presented in the manuscript showing concordant effects between males and females. (9.4.1) Vegfa, Flt1, Pdk1, Ldha, Bnip3, Il20rb. (9.4.2) Mki67, Eomes, Pax6, Sox9, Tbr1, Bcl11b, Satb2, Cux1. (9.4.3) Gfap, Dlx2, Olig2, Gad1."}
+
+# S6c
+x <- c("Gfap", "Olig2",  "Dlx2", "Gad1")
+pl <- lapply(x, function(x) FUN={
+  rpkm_box_plot_sex(x)+theme(legend.position = "none")
+})
+
+marrangeGrob(pl, nrow = 2, ncol=2, top = "")
+```
+
+# 10. R sessionInfo()
+```{r, fig.width = 6, fig.height = 12}
+
+library(pander)
+
+pander(sessionInfo())
 
 ```
 
