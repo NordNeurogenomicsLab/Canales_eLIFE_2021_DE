@@ -32,7 +32,7 @@ urlcolor: blue
 ```{r, message=FALSE, warning = FALSE, error=FALSE, echo=TRUE, cache=FALSE}
 
 # Directory structure
-github_dir <- file.path("G:\\Shared drives\\Nord Lab - Computational Projects\\MIA\\eLIFE_Clean_code_for_GitHub")
+github_dir <- file.path("G:/Shared drives/Nord Lab - Computational Projects/MIA/Canales_et_al_eLIFE_DE_repo/Canales_eLIFE_2021_DE")
 
 setwd(github_dir)
 
@@ -73,15 +73,15 @@ library(Hmisc)
 ```{r}
 # Reads input files
 
-setwd("G:/Shared drives/Nord Lab - Computational Projects/MIA/eLIFE_Clean_code_for_GitHub/")
+setwd(github_dir)
 
-exp.data <- read.csv("./GEO_submission files/Gene_counts.csv")
+exp.data <- read.csv("./Extra_submission files/Gene_counts.csv")
 rownames(exp.data) <- exp.data$X
 exp.data$X <- NULL
 
-sample.info <- read.csv("./GEO_submission files/metadata.csv")
+sample.info <- read.csv("./Extra_submission files/metadata.csv")
 
-load("./GEO_submission files/exonic.gene.sizes")
+load("./Extra_submission files/exonic.gene.sizes")
 
 # Exonic gene sizes were calculated as follows:
 # Generate mm9 list of exon sizes 
@@ -102,7 +102,7 @@ load("./GEO_submission files/exonic.gene.sizes")
 # 1. Metadata
 ```{r, fig.width = 7, fig.height = 12}
 
-sample.info_submission <- read.csv("GEO_submission files/Supplementary Table 5, RNA-seq sample metadata_03_02_2021.csv")
+sample.info_submission <- read.csv("Extra_submission files/Supplementary Table 5, RNA-seq sample metadata_03_02_2021.csv")
 
 datatable(sample.info_submission, 
           rownames = FALSE, 
@@ -181,7 +181,7 @@ keep <- filter(keep, value == "TRUE")$gene_name
 
 # NOTE: The set of included genes reported in the manuscript was determined using expression criteria from an expanded set of samples including a condition that was not used for the manuscript. The difference between the gene counts is 17195 in the manuscript from the larger set of samples, compared to 17051 genes that would pass in the set of samples used in the MIA vs. control comparison.  Note that there is no difference among DEG passing FDR < 0.05 using either gene set.  
 
-original_exp.data <- read.csv("GEO_submission files/Count_gene_set_from_initial_submission.csv")
+original_exp.data <- read.csv("Extra_submission files/Count_gene_set_from_initial_submission.csv")
 
 # length(keep) # 17051
 # length(original_exp.data$gene_name) # 17195
@@ -302,6 +302,7 @@ train.data <- data.frame(PCA.1=pca.results$rotation[control.datapoints,1],
                          sex=sex.by.rna[control.datapoints],
                          lane=test.lane[control.datapoints],
                          response=test.response[control.datapoints]
+                         
 )
 
 predict.data <- data.frame(PCA.1=pca.results$rotation[polyic.datapoints,1],
@@ -313,11 +314,12 @@ predict.data <- data.frame(PCA.1=pca.results$rotation[polyic.datapoints,1],
                          sex=sex.by.rna[polyic.datapoints],
                          lane=test.lane[polyic.datapoints],
                          response=test.response[polyic.datapoints]
+                         
 )
 
 lm.model <- lm(as.numeric(as.character(test.dpc[control.datapoints])) ~
-                 PCA.1 + PCA.2 + PCA.3 + PCA.4 + PCA.5 + rRNA + sex + response
-               , data = train.data
+                 PCA.1 + PCA.2 + PCA.3 + PCA.4 + PCA.5 + sex + lane,
+                 data = train.data
 )
 
 
@@ -791,7 +793,7 @@ Fig_1d
 
 ```{r, fig.width = 7, fig.height = 7, fig.cap="**Figure 1g.** Intersection of stage-specific DE genes with the 82 SFARI autism-associated mouse gene orthologs that were expressed at measurable levels in the RNA-seq data. E17.5 DE genes (FDR < 0.05) were enriched for SFARI genes (P = 3.9e-04, hypergeometric test). Concentric circles represent developmental time-points. Light red, upregulated DE genes (P < 0.05); dark red, upregulated DE genes (FDR < 0.05); light blue, downregulated DE genes (P < 0.05); dark blue, downregulated DE genes (FDR < 0.05)."}
 
-SFARI_genes <- read.csv("./GEO_submission files/SFARI-Gene_genes_01-15-2019release_02-26-2019export.csv")
+SFARI_genes <- read.csv("./Extra_submission files/SFARI-Gene_genes_01-15-2019release_02-26-2019export.csv")
 
 #head(SFARI_genes)
 
@@ -1069,8 +1071,8 @@ Fig1g
 ## 5.1 SFARI genes enrichment statistical tests
 
 ### 5.1.1 Permutation test
-```{r, fig.width = 12, fig.height = 8, fig.cap="Enrichment of autism-associated genes in our DE gene set, based on randomly sampled gene sets (bars) vs. observed number (red line)."}
 
+```{r, fig.width = 12, fig.height = 8, fig.cap="Enrichment of autism-associated genes in our DE gene set, based on randomly sampled gene sets (bars) vs. observed number (red line)."}
 
 ##### Permutation test per GOmpers et al. #####
 # Code adopted from Alex's analysis
@@ -1087,6 +1089,8 @@ binary.score.test <- ifelse(filter(x, PValue < 0.05)$gene_name %in% filter(x, PV
 
 
 geneset.perm.test <- function(binary.score.reference, binary.score.test, iterations, plot.name) {
+  
+  set.seed(1234)
   
   binary.score.reference <- ifelse(is.na(binary.score.reference),0,binary.score.reference)
   binary.score.test <- ifelse(is.na(binary.score.test),0,binary.score.test)
@@ -1134,6 +1138,7 @@ permutation_test(E19.5_GLM_SFARI_cat, "P0")
 ```
 
 ### 5.1.2 P value table
+P values presented in the manuscript may be slightly different due to unspecified seed for the pseudorandom number generator during project development. These differences are numerically negligible, and do not have any impact on any conclusions of this work.
 ```{r, fig.width = 4, fig.height = 6}
 
 #Hypergeometric test
@@ -1142,6 +1147,8 @@ SFARI_genes_hypergeometric_test <- function(x){
 
 #https://stats.stackexchange.com/questions/16247/calculating-the-probability-of-gene-list-overlap-between-an-rna-seq-and-a-chip-c
 #x <- E17.5_GLM_module_SFARI_cat
+  
+  set.seed(1234)
   
   n <- length(as.character(x$gene_name))   #Total gene population 15k
   a <- length(filter(x, PValue < 0.05)$gene_name)  #RNA Seq enriched # 3000
@@ -1847,5 +1854,6 @@ library(pander)
 
 pander(sessionInfo())
 
+# Thw workspace is saved at save.image("G:/Shared drives/Nord Lab - Computational Projects/MIA/Canales_et_al_eLIFE_DE_repo/Canales_eLIFE_2021_DE/Canales_2021_eLIFE_DE_workspace.RData")
 ```
 
