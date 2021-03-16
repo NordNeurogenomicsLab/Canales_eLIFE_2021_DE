@@ -1,7 +1,7 @@
 ---
 title: "Differential Gene Expression"
 subtitle: |
-  [Canales et al. 2020 (under review): A temporal map of maternal immune activation-induced changes \n reveals a shift in neurodevelopmentiming and perturbed cortical development in mice](https://www.biorxiv.org/content/10.1101/2020.06.13.150359v1) 
+  [Canales et al. 2020: A temporal map of maternal immune activation-induced changes \n reveals a shift in neurodevelopmentiming and perturbed cortical development in mice](https://elifesciences.org/articles/60100) 
  
 author: |
   | Data analysis by:
@@ -90,7 +90,7 @@ load("./Extra_submission files/exonic.gene.sizes")
 #txdb <- makeTxDbFromGFF("G:/Shared drives/Nord Lab - Personal #Folders/Karol/Genomes/Mus_musculus/UCSC/mm9/Annotation/genes.gtf", #format="gtf")
 #exons.list.per.gene <- exonsBy(txdb,by="gene")
 
-# I paralelized this increasing the speed of the process >2x on a 4-core (logical) machine. 
+# I parallelized this increasing the speed of the process >2x on a 4-core (logical) machine. 
 # Use mclapply instead of parLapply if you use a Mac.
 #cl <- makeCluster(detectCores())
 #exonic.gene.sizes <- parallel::parLapply(cl, #exons.list.per.gene,function(x){sum(width(reduce(x)))})
@@ -171,7 +171,7 @@ ggplot(df, aes(x=rpkm_log2))+
 # Setting the threshold for minimum rpkm value in at least 2 samples. 
 threshold = -2
 
-# Nymber of genes after filtering
+# Number of genes after filtering
 #sum(reshape2::melt(rowSums(rpkm.data > threshold) >= 2)$value) # 17051
 
 # Let's filter the dataset and plot the histogram distribution
@@ -179,7 +179,7 @@ keep <- as.data.frame(reshape2::melt(rowSums(rpkm.data > threshold) >= 2))
 keep$gene_name <- rownames(keep)
 keep <- filter(keep, value == "TRUE")$gene_name
 
-# NOTE: The set of included genes reported in the manuscript was determined using expression criteria from an expanded set of samples including a condition that was not used for the manuscript. The difference between the gene counts is 17195 in the manuscript from the larger set of samples, compared to 17051 genes that would pass in the set of samples used in the MIA vs. control comparison.  Note that there is no difference among DEG passing FDR < 0.05 using either gene set.  
+# NOTE: The set of included genes reported in the manuscript was determined using expression criteria from an expanded set of samples including a condition that was not used for the manuscript. The difference between the gene counts is 17195 in the manuscript from the larger set of samples, compared to 17051 genes that would pass in the set of samples used in the MIA vs. control comparison.  Note that there is no difference among DE genes passing FDR < 0.05 using either gene set.  
 
 original_exp.data <- read.csv("Extra_submission files/Count_gene_set_from_initial_submission.csv")
 
@@ -276,7 +276,7 @@ test.data <- exp.data
 min.cpm.criteria <- 0.1
 min.cpm <- min.cpm.criteria
 
-#qCML expression modeling
+# qCML expression modeling
 y <- DGEList(counts=test.data, group=test.group)
 keep <- rowSums(cpm(y)>min.cpm) >=2
 y <- y[keep, , keep.lib.sizes=FALSE]
@@ -289,7 +289,7 @@ y <- estimateTagwiseDisp(y)
 test.pseudo <- y$pseudo.counts
 pca.results <- prcomp(test.pseudo)
 
-#PCA dataframe does not contain all samples as the exp.data, so I have to find which datapoints are control and polyic now
+# PCA dataframe does not contain all samples as the exp.data, so I have to find which datapoints are control and polyic now
 control.datapoints <- which(sample.info$Condition == "Saline")
 polyic.datapoints <- which(sample.info$Condition == "PolyIC")
 
@@ -327,7 +327,7 @@ lm.model <- lm(as.numeric(as.character(test.dpc[control.datapoints])) ~
 predict.saline <- predict(lm.model, newdata = train.data)
 predict.polyic <- predict(lm.model, newdata = predict.data)
 
-# I had some trouble with the original for loop and I replaced it with lapply. I also added the sd values and a plot representing modeled DPC values.
+# I had some trouble with the original for loop and I replaced it with lapply.
 dpc.predict.mean.saline <- lapply(1:4, function(x) FUN=mean(predict.saline[which(as.character(test.dpc[control.datapoints])==unique(test.dpc)[x])]))
 
 dpc.predict.sd.saline <- lapply(1:4, function(x) FUN=sd(predict.saline[which(as.character(test.dpc[control.datapoints])==unique(test.dpc)[x])]))
@@ -718,7 +718,7 @@ datatable(E19.5_GLM, rownames = FALSE, filter="top", options = list(pageLength =
 ## 4.3 Heatmap of DE genes
 
 ```{r, fig.cap="**Figure 1d.** Heatmap representing relative gene expression changes between control and MIA samples across time-points. Hierarchical clustering by relative fold changes shows stage-specific differential expression signatures (DE genes shown have FDR < 0.05 and log2 fold change (log2FC) > 1 or < -1)."}
-#Build dataframe of logFC values
+# Build dataframe of logFC values
 padding <- 0
 a <- data.frame("gene_name"=E12.5_GLM$gene_name, "E12.5_logFC"=E12.5_GLM$logFC+padding)
 b <- data.frame("gene_name"=E14.5_GLM$gene_name, "E14.5_logFC"=E14.5_GLM$logFC+padding)
@@ -797,13 +797,13 @@ SFARI_genes <- read.csv("./Extra_submission files/SFARI-Gene_genes_01-15-2019rel
 
 #head(SFARI_genes)
 
-#We are using only high confidence genes associated with autism
+# We are using only high confidence genes associated with autism
 SFARI_genes_filtered <- filter(SFARI_genes, gene.score <3)
 
 
 require("biomaRt")
 
-#Function translating human to mouse orthologs
+# Function translating human to mouse orthologs
 humanToMouse <- function(x){
   
   human = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
@@ -816,7 +816,7 @@ humanToMouse <- function(x){
   return(mousex)
 }
 
-#Returning a df matching orthologs
+# Returning a df matching orthologs
 humanToMouse_2 <- function(x){
   
   human = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
@@ -829,13 +829,13 @@ humanToMouse_2 <- function(x){
   return(mousex)
 }
 
-#Translating orthologs
+# Translating orthologs
 SFARI_genes_mouse <- humanToMouse_2(SFARI_genes$gene.symbol)
 #SFARI_genes_mouse
 
 SFARI_genes_with_ortho <- merge(SFARI_genes, SFARI_genes_mouse, by.x= "gene.symbol", by.y = "HGNC.symbol")
 
-#making sure still have all the 87 SFARI genes with gene.score 1 and 2
+# Making sure still have all the 87 SFARI genes with gene.score 1 and 2
 x <- filter(SFARI_genes_with_ortho, gene.score %in% c(1,2))[,c(1,9)]
 
 
@@ -891,7 +891,7 @@ E14.5_GLM_SFARI_cat$DPC <- rep("E14.5", nrow(E14.5_GLM_SFARI_cat))
 E17.5_GLM_SFARI_cat$DPC <- rep("E17.5", nrow(E17.5_GLM_SFARI_cat))
 E19.5_GLM_SFARI_cat$DPC <- rep("E19.5", nrow(E19.5_GLM_SFARI_cat))
 
-#Checking the number of SFARI genes with gene.score 1 or 2 at each timepoint
+# Checking the number of SFARI genes with gene.score 1 or 2 at each timepoint
 #filter(E12.5_GLM_SFARI_cat, SFARI_category %in% c(1,2)) #82 genes
 #filter(E14.5_GLM_SFARI_cat, SFARI_category %in% c(1,2)) #82 genes
 #filter(E17.5_GLM_SFARI_cat, SFARI_category %in% c(1,2)) #82 genes
@@ -900,30 +900,30 @@ E19.5_GLM_SFARI_cat$DPC <- rep("E19.5", nrow(E19.5_GLM_SFARI_cat))
 
 SFARI_genes_filtered_mouse <- x$MGI.symbol
 
-#Double checking how many of the SFARI orthologs overlap with genes in DE analysis
+# Double checking how many of the SFARI orthologs overlap with genes in DE analysis
 #length(unique(SFARI_genes_filtered_mouse)) #There are 89 mouse orthologs of gene.score 1 and 2 SFARI genes
 
 #filter(E12.5_GLM, gene_name %in% SFARI_genes_filtered_mouse) #82 genes
 #filter(E14.5_GLM, gene_name %in% SFARI_genes_filtered_mouse) #82 genes
 #filter(E17.5_GLM, gene_name %in% SFARI_genes_filtered_mouse) #82 genes
 #filter(E19.5_GLM, gene_name %in% SFARI_genes_filtered_mouse) #82 genes
-#The missing 7 genes are just not sufficiently expressed. 
+# Missing 7 genes are just not sufficiently expressed. 
 
 
-##### Stacked circular bar plot - the one in figure 2 #####
+##### Stacked circular bar plot - Fig.1g 1g #####
 df <- rbind(E12.5_GLM_SFARI_cat, E14.5_GLM_SFARI_cat, E17.5_GLM_SFARI_cat, E19.5_GLM_SFARI_cat)
 
 # Filtering SFARI genes with gene.score 1 and 2
 df_test <- filter(df, SFARI_category %in% c(1,2))
 
 
-#I'm replacing the real values of logFC to 1 and -1 to build a stacked bar plot
+# I'm replacing the real values of logFC to 1 and -1 to build a stacked bar plot
 df_test$logFC <- ifelse(df_test$logFC > 0, 1, -1)
 
-#Annotates if a gene is significant
+# Annotates if a gene is significant
 df_test$Sig <- as.character(ifelse(df_test$PValue < 0.05, "DE", "Non-DE"))
 
-#A combination fo DPC and significance
+# A combination fo DPC and significance
 df_test$DPC_Sig <- paste(df_test$DPC, df_test$Sig, sep="_")
 
 my_col <- brewer.pal(n = 8, name = "Set1")
@@ -931,13 +931,13 @@ my_col <- brewer.pal(n = 8, name = "Set1")
 #head(df_test)
 
 
-#Add Up or down
+# Add Up or down
  df_test$dir <- ifelse(df_test$logFC > 0, "Up", "Down")  # Redundant
  df_test$DPC_Sig_dir <- paste(df_test$DPC, df_test$Sig, df_test$dir, sep = "_")
 
  df_test <- arrange(df_test, gene_name)
 
-#Yes, I checked the gene names are the same in the columns
+# Yes, I checked the gene names are the same in the columns
 #all(filter(df_test, DPC == "E12.5")$gene_name == filter(df_test, DPC == "E14.5")$gene_name)
 #all(filter(df_test, DPC == "E17.5")$gene_name == filter(df_test, DPC == "E19.5")$gene_name)
 #all(filter(df_test, DPC == "E12.5")$gene_name == filter(df_test, DPC == "E17.5")$gene_name)
@@ -977,7 +977,7 @@ myAng <- rev(myAng)
 myAng <- myAng - 90
 myAng <- ifelse(myAng > 90 & myAng < 270, myAng-180, myAng)
 
-#Adding FDR
+# Adding FDR
 df_test$DPC_Sig_dir <- ifelse(df_test$FDR < 0.05 & df_test$logFC == -1 & df_test$DPC == "E12.5", "E12.5_Down_FDR", df_test$DPC_Sig_dir)
 df_test$DPC_Sig_dir <- ifelse(df_test$FDR < 0.05 & df_test$logFC == -1 & df_test$DPC == "E14.5", "E14.5_Down_FDR", df_test$DPC_Sig_dir)
 df_test$DPC_Sig_dir <- ifelse(df_test$FDR < 0.05 & df_test$logFC == -1 & df_test$DPC == "E17.5", "E17.5_Down_FDR", df_test$DPC_Sig_dir)
@@ -1074,12 +1074,12 @@ Fig1g
 
 ```{r, fig.width = 12, fig.height = 8, fig.cap="Enrichment of autism-associated genes in our DE gene set, based on randomly sampled gene sets (bars) vs. observed number (red line)."}
 
-##### Permutation test per GOmpers et al. #####
+##### Permutation test per Gompers et al. #####
 # Code adopted from Alex's analysis
 
-#All genes in the background
+# All genes in the background
 
-#Enrichment fo SFARI genes among DE genes.
+# Enrichment fo SFARI genes among DE genes.
 permutation_test <-  function(x, plot.name){
 # x <- E17.5_GLM_module_SFARI_cat
   
@@ -1317,7 +1317,7 @@ y <- estimateGLMCommonDisp(y,design)
 y <- estimateGLMTrendedDisp(y,design)
 y <- estimateGLMTagwiseDisp(y,design)
 fit <- glmFit(y,design) 
-lrt <- glmLRT(fit) # Genewise Negative Binomial Generalized Linear Models.
+lrt <- glmLRT(fit)
 
 glm.output <- topTags(lrt, n=Inf)
 glm.output.full <- glm.output$table
@@ -1459,7 +1459,7 @@ y <- estimateGLMCommonDisp(y,design)
 y <- estimateGLMTrendedDisp(y,design)
 y <- estimateGLMTagwiseDisp(y,design)
 fit <- glmFit(y,design) 
-lrt <- glmLRT(fit) # Genewise Negative Binomial Generalized Linear Models.
+lrt <- glmLRT(fit)
 
 glm.output <- topTags(lrt, n=Inf)
 glm.output.full <- glm.output$table
@@ -1516,7 +1516,7 @@ y <- estimateGLMCommonDisp(y,design)
 y <- estimateGLMTrendedDisp(y,design)
 y <- estimateGLMTagwiseDisp(y,design)
 fit <- glmFit(y,design) 
-lrt <- glmLRT(fit) # Genewise Negative Binomial Generalized Linear Models.
+lrt <- glmLRT(fit)
 
 glm.output <- topTags(lrt, n=Inf)
 glm.output.full <- glm.output$table
@@ -1665,7 +1665,7 @@ llv <- Venn(ll, SetNames = c("DE_model_including_both_sexes", "Male_DE", "Female
 #plot(llv, doWeights = FALSE)
 #plot(llv, doWeights = TRUE)
 
-# Note. Editing Vennerable plos is very difficult, especially in Rmd framework. Consider switching to ggVennDiagram. 
+# NOTE: Editing Vennerable plos is very difficult, especially in Rmd framework. Consider switching to ggVennDiagram. 
 
 myplot1 <- function(){plot(llv, doWeights = TRUE)}
 myplot2 <- function(){plot(llv, doWeights = FALSE)}
@@ -1681,8 +1681,6 @@ grid.arrange(p1, p2, ncol=2)
 
 ### 9.3.1 E14.5
 ```{r, fig.width = 14, fig.height = 5}
-
-# The order of bars is not exactly the same as in the paper. I decided to omit this due to its complication. 
 
 rpkm_box_plot_sex_single_dpc <- function(x, y){
   # x <- "Vegfa"
